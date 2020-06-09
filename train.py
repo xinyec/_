@@ -8,7 +8,7 @@ def adjacencyBuild(n, neg, num):
     """n: current node, neg: neighbour node, num: number of the nodes"""
     if len(n) != len(neg):
         print("error")
-        return 
+        return
     N = len(n)
     A = np.zeros((num, num))
     for i in range(N):
@@ -43,6 +43,7 @@ A = torch.Tensor(A)
 
 feat_dim = features.shape[1]
 num_class = int(label_list.max().data.numpy() + 1) #7
+
 model = GCN(A.to(device), feat_dim, 16, num_class, droprate=0.5)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
@@ -64,11 +65,11 @@ for epoch in range(200):
           'loss_val: {:.3f}'.format(loss_val.item()))
 
     losses.append(loss.data.cpu().numpy())
-    
+
 model.eval()
 _, prediction = model(features.cuda()).max(dim=1)
 acc = acc_calc(label_list[test_mask].to(device),prediction[test_mask].to(device))
-print("accuracy of test Samples: ", acc)
+print("accuracy of in test set: ", acc)
 
 #plt.plot(losses, label='losses', color='g')
 #plt.legend()

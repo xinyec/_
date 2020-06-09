@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 class GCN(torch.nn.Module):
     def __init__(self, A, feat_dim, hidden_dim, num_class, droprate=0.1):
@@ -21,4 +20,4 @@ class GCN(torch.nn.Module):
         output = self.gcn_layer(self.A, self.D, hidden, self.W_W)
         output = torch.nn.LogSoftmax(dim=1)(output)
         return output
-    
+
