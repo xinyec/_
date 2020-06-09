@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import torch
 import random
 import numpy as np
@@ -29,7 +31,6 @@ def fix_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 fix_seed(42)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 train_mask = torch.Tensor(np.load("data/train_mask.npy")).bool()
 test_mask = torch.Tensor(np.load("data/test_mask.npy")).bool()
 features = torch.Tensor(np.load("data/features.npy"))
@@ -44,7 +45,8 @@ A = torch.Tensor(A)
 feat_dim = features.shape[1]
 num_class = int(label_list.max().data.numpy() + 1) #7
 
-model = GCN(A.to(device), feat_dim, 16, num_class, droprate=0.5)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = GCN(feat_dim, 16, num_class, droprate=0.5, bias=False)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -53,7 +55,7 @@ losses = []
 
 for epoch in range(200):
     optimizer.zero_grad()
-    output = model(features.to(device))
+    output = model(A.to(device), features.to(device))
 
     loss = torch.nn.NLLLoss()(output[train_mask].to(device), label_list[train_mask].long().to(device))
     loss.backward(retain_graph=True)
@@ -67,7 +69,7 @@ for epoch in range(200):
     losses.append(loss.data.cpu().numpy())
 
 model.eval()
-_, prediction = model(features.cuda()).max(dim=1)
+_, prediction = model(A.to(device), features.cuda()).max(dim=1)
 acc = acc_calc(label_list[test_mask].to(device),prediction[test_mask].to(device))
 print("accuracy of in test set: ", acc)
 

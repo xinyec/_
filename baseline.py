@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# xinye chen
+# this code is the first version, has some mistake but can run thoroughly; better do not run it, use gcn.py and train.py instead.
+
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
