@@ -24,39 +24,13 @@ def fix_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 fix_seed(2020)
-content_path = "./cora/cora.content"
-cite_path = "./cora/cora.cites"
+feat_Matrix = torch.Tensor(np.load("data/feat_Matrix.npy"))
+label_list = torch.Tensor(np.load("data/label_list.npy"))
+cites = np.load("data/cites.npy")
 
-with open(content_path, "r") as fp:
-    contents = fp.readlines()
-
-with open(cite_path, "r") as fp:
-    cites = fp.readlines()
-
-contents = np.array([np.array(l.strip().split("\t")) for l in contents])
-paper_list, feat_list, label_list = np.split(contents, [1, -1], axis=1)
-paper_list, label_list = np.squeeze(paper_list), np.squeeze(label_list)
-
-# paper index
-paper_dict = dict([(key, val) for val, key in enumerate(paper_list)])
-
-# label index
-labels = list(set(label_list))
-label_dict = dict([(key, val) for val, key in enumerate(labels)])
-
-# edge index
-cites = [i.strip().split("\t") for i in cites]
-cites = np.array([[paper_dict[i[0]], paper_dict[i[1]]] for i in cites], np.int64).T
-cites = np.concatenate((cites, cites[::-1, :]), axis=1)
-
-# input
-node_num = len(paper_list)
-feat_dim = feat_list.shape[1]
-num_class = len(labels)
-
-feat_Matrix = feat_list.astype(np.float32)
-label_list = np.array([label_dict[i] for i in label_list])
-label_list = torch.from_numpy(label_list)
+node_num = len(feat_Matrix)
+feat_dim = feat_Matrix.shape[1]
+num_class = 7
 
 A = adjacencyBuild(cites[0],cites[1], node_num)
 A = A + np.eye(A.shape[0])
@@ -75,7 +49,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 model.train()
 losses = []
 for epoch in range(200):
-    
     optimizer.zero_grad()#model.zero_grad()
     output = model(feat_Matrix.cuda())
 

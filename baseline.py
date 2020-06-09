@@ -1,40 +1,6 @@
 import torch
 import numpy as np
-
-
-content_path = "./cora/cora.content"
-cite_path = "./cora/cora.cites"
-
-with open(content_path, "r") as fp:
-    contents = fp.readlines()
-with open(cite_path, "r") as fp:
-    cites = fp.readlines()
-
-contents = np.array([np.array(l.strip().split("\t")) for l in contents])
-paper_list, feat_list, label_list = np.split(contents, [1,-1], axis=1)
-paper_list, label_list = np.squeeze(paper_list), np.squeeze(label_list)
-
-# paper index
-paper_dict = dict([(key, val) for val, key in enumerate(paper_list)])
-
-# label index 
-labels = list(set(label_list))
-label_dict = dict([(key, val) for val, key in enumerate(labels)])
-
-# edge index
-cites = [i.strip().split("\t") for i in cites]
-cites = np.array([[paper_dict[i[0]], paper_dict[i[1]]] for i in cites], np.int64).T   # (2, edge)
-cites = np.concatenate((cites, cites[::-1, :]), axis=1)  # (2, 2*edge) or (2, E)
-
-# input
-node_num = len(paper_list)
-feat_dim = feat_list.shape[1]
-num_class = len(labels)
-
-feat_Matrix = feat_list.astype(np.float32)
-label_list = np.array([label_dict[i] for i in label_list])
-label_list = torch.from_numpy(label_list)
-
+import matplotlib.pyplot as plt
 
 class GCN(torch.nn.Module):
     def __init__(self, A, feat_dim, hidden_dim, num_class):
@@ -69,9 +35,17 @@ def adjacencyBuild(n, neg, num):
         A[n[i]-1, neg[i]-1] = 1
     return A.T
 
-A = adjacencyBuild(cites[0],cites[1], node_num)
+feat_Matrix = torch.Tensor(np.load("data/feat_Matrix.npy"))
+label_list = torch.Tensor(np.load("data/label_list.npy"))
+cites = np.load("data/cites.npy")
+
+node_num = len(feat_Matrix)
+feat_dim = feat_Matrix.shape[1]
+num_class = 7
+
+
+A = adjacencyBuild(cites[0,:],cites[1,:], node_num)
 A = A + np.eye(A.shape[0])
-display(A.shape)
 A = torch.Tensor(A)
 feat_Matrix = torch.Tensor(feat_Matrix)
 
@@ -91,13 +65,6 @@ def get_data(folder="cora", data_name="cora"):
     dataset = Planetoid(root=folder, name=data_name)
     return dataset.shuffle()
     
-    
-
-#train_mask = torch.zeros(node_num, dtype=torch.bool)
-#train_mask[:node_num - 1000] = 1                  # 1700 training
-#test_mask = torch.zeros(node_num, dtype=torch.bool)
-#test_mask[node_num - 1000] = 1                    # 1000 test
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = GCN(A, feat_dim, 16, num_class)
@@ -111,11 +78,9 @@ data = cora_dataset[0].to(device)
 train_mask = data.train_mask
 test_mask = data.test_mask
 
-
 model.train()
 losses = []
 for epoch in range(200):
-    
     optimizer.zero_grad()#model.zero_grad()
     output = model(feat_Matrix.cuda())
 
@@ -126,7 +91,7 @@ for epoch in range(200):
     losses.append(loss.data.cpu().numpy())
     
     
- model.eval()
+model.eval()
 _, prediction = model(feat_Matrix.cuda()).max(dim=1)
 prediction = prediction.cpu()
 test_correct = prediction[train_mask].eq(label_list[train_mask]).sum().item()
@@ -134,8 +99,7 @@ test_number = train_mask.sum().item()
 
 print("Accuracy of Test Samples: ", test_correct / test_number)
 
-import matplotlib.pyplot as plt
-%matplotlib inline
+
 plt.plot(losses, label='losses', color='g')
 plt.legend()
 plt.show()
