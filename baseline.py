@@ -32,12 +32,13 @@ def adjacencyBuild(n, neg, num):
     N = len(n)
     A = np.zeros((num, num))
     for i in range(N):
-        A[n[i]-1, neg[i]-1] = 1
+        A[n[i], neg[i]] = 1
+        A[neg[i],n[i]] = 1
     return A.T
 
-feat_Matrix = torch.Tensor(np.load("data/feat_Matrix.npy"))
+feat_Matrix = torch.Tensor(np.load("data/features.npy"))
 label_list = torch.Tensor(np.load("data/label_list.npy"))
-cites = np.load("data/cites.npy")
+cites = np.load("data/edge_index.npy")
 
 node_num = len(feat_Matrix)
 feat_dim = feat_Matrix.shape[1]
@@ -84,7 +85,7 @@ for epoch in range(200):
     optimizer.zero_grad()#model.zero_grad()
     output = model(feat_Matrix.cuda())
 
-    loss = torch.nn.NLLLoss()(output[test_mask].cuda(), label_list[test_mask].long().cuda())
+    loss = torch.nn.NLLLoss()(output[train_mask].cuda(), label_list[train_mask].long().cuda())
     loss.backward(retain_graph=True)
     optimizer.step()
     print("epoch", epoch + 1, "loss", loss.item())
@@ -94,10 +95,10 @@ for epoch in range(200):
 model.eval()
 _, prediction = model(feat_Matrix.cuda()).max(dim=1)
 prediction = prediction.cpu()
-test_correct = prediction[train_mask].eq(label_list[train_mask]).sum().item()
-test_number = train_mask.sum().item()
+correct = prediction[test_mask].eq(label_list[test_mask]).sum().item()
+total = test_mask.sum().item()
 
-print("Accuracy of Test Samples: ", test_correct / test_number)
+print("accuracy of test samples: ", correct / total)
 
 
 plt.plot(losses, label='losses', color='g')
