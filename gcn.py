@@ -6,12 +6,11 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
         self.W_N = torch.nn.Parameter(data=torch.rand(feat_dim, hidden_dim), requires_grad=True)
         self.W_W = torch.nn.Parameter(data=torch.rand(hidden_dim, num_class), requires_grad=True)
-        
-        D = torch.Tensor(np.diag(np.array(np.power(np.sum(A.data.numpy(), axis=0),-1))))
-        #torch.Tensor(torch.diagonal(pow(torch.sum(self.A, axis=0),-0.5)))
-        self.D = torch.Tensor(D).cuda()
-        self.A = torch.Tensor(A).cuda()
-        self.droprate=droprate
+
+        #D = torch.Tensor(np.diag(np.array(np.power(np.sum(A.data.cpu().numpy(), axis=0),-1))))
+        self.D = torch.diag(pow(torch.sum(A, axis=0),-1))
+        self.A = A
+        self.droprate = droprate
 
     def gcn_layer(self, A, D, X, W):
         return torch.mm(torch.mm(torch.mm(D, A),X),W)

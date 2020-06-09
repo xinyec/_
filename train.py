@@ -30,35 +30,34 @@ def fix_seed(seed):
 
 fix_seed(42)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-train_mask = torch.Tensor(np.load("data/train_mask.npy")).to(device).bool()
-test_mask = torch.Tensor(np.load("data/test_mask.npy")).to(device).bool()
-features = torch.Tensor(np.load("data/features.npy")).to(device)
-label_list = torch.Tensor(np.load("data/label_list.npy")).to(device)
+train_mask = torch.Tensor(np.load("data/train_mask.npy")).bool()
+test_mask = torch.Tensor(np.load("data/test_mask.npy")).bool()
+features = torch.Tensor(np.load("data/features.npy"))
+label_list = torch.Tensor(np.load("data/label_list.npy"))
 edge_index = np.load("data/edge_index.npy")
 
 node_num = features.shape[0]
 A = adjacencyBuild(edge_index[0,:],edge_index[1,:], node_num)
 A = A + np.eye(A.shape[0])
 A = torch.Tensor(A)
-feat_Matrix = features
 
 feat_dim = features.shape[1]
-num_class = int(label_list.max().cpu().data.numpy() + 1) #7
-model = GCN(A, feat_dim, 16, num_class)
+num_class = int(label_list.max().data.numpy() + 1) #7
+model = GCN(A.to(device), feat_dim, 16, num_class)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 losses = []
-for epoch in range(260):
-    optimizer.zero_grad()#model.zero_grad()
-    output = model(feat_Matrix.cuda())
 
-    loss = torch.nn.NLLLoss()(output[train_mask].cuda(), label_list[train_mask].long().cuda())
+for epoch in range(260):
+    optimizer.zero_grad()
+    output = model(features.to(device))
+
+    loss = torch.nn.NLLLoss()(output[train_mask].to(device), label_list[train_mask].long().to(device))
     loss.backward(retain_graph=True)
     optimizer.step()
-    loss_val = torch.nn.NLLLoss()(output[test_mask].cuda(), label_list[test_mask].long().cuda())
+    loss_val = torch.nn.NLLLoss()(output[test_mask].to(device), label_list[test_mask].long().to(device))
 
     print('epoch: {:03d}'.format(epoch+1),
           'loss_train: {:.3f}'.format(loss.item()),
@@ -67,9 +66,9 @@ for epoch in range(260):
     losses.append(loss.data.cpu().numpy())
     
 model.eval()
-_, prediction = model(feat_Matrix.cuda()).max(dim=1)
+_, prediction = model(features.cuda()).max(dim=1)
 acc = acc_calc(label_list[test_mask],prediction[test_mask])
-print("Accuracy of Test Samples: ", acc)
+print("accuracy of test Samples: ", acc)
 
 #plt.plot(losses, label='losses', color='g')
 #plt.legend()
