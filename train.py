@@ -67,7 +67,7 @@ for epoch in range(260):
     
 model.eval()
 _, prediction = model(features.cuda()).max(dim=1)
-acc = acc_calc(label_list[test_mask],prediction[test_mask])
+acc = acc_calc(label_list[test_mask].to(device),prediction[test_mask].to(device))
 print("accuracy of test Samples: ", acc)
 
 #plt.plot(losses, label='losses', color='g')
