@@ -43,14 +43,14 @@ A = torch.Tensor(A)
 
 feat_dim = features.shape[1]
 num_class = int(label_list.max().data.numpy() + 1) #7
-model = GCN(A.to(device), feat_dim, 16, num_class)
+model = GCN(A.to(device), feat_dim, 16, num_class, droprate=0.5)
 model = model.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 losses = []
 
-for epoch in range(260):
+for epoch in range(200):
     optimizer.zero_grad()
     output = model(features.to(device))
 
